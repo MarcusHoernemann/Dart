@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dart Verein Manager</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card: #242424;
+            --text: #ffffff;
+            --accent: #ff0000; 
+            --secondary: #4caf50; 
+            --loss: #555555;
+            --pdf-color: #2196f3;
+            --undo-color: #ff9800;
+        }
+        @media print {
+            body { background: white !important; color: black !important; padding: 0; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; border: none; background: white; color: black; margin-bottom: 30px; }
+            h2, h3 { color: black !important; border-bottom: 1px solid black; }
+            table { color: black !important; border: 1px solid black; width: 100%; margin-bottom: 20px; }
+            th, td { border-bottom: 1px solid #ccc; padding: 8px; }
+            .stats-val { color: black !important; }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container { width: 100%; max-width: 600px; }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        h2 { margin: 0 0 10px 0; color: var(--secondary); font-size: 1.3rem; border-bottom: 1px solid #444; padding-bottom: 8px; }
+        h3 { margin: 0; font-size: 1.2rem; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        button {
+            border: none; color: white; padding: 15px 5px; border-radius: 8px;
+            font-size: 13px; font-weight: 800; cursor: pointer; touch-action: manipulation; text-transform: uppercase;
+        }
+        .btn-ring { background: var(--accent); }
+        .btn-sec { background: var(--secondary); }
+        .btn-loss { background: var(--loss); }
+        .btn-pdf { background: var(--pdf-color); width: 100%; margin-top: 10px; }
+        .btn-undo-small { background: var(--undo-color); padding: 8px 15px; font-size: 18px; line-height: 1; border-radius: 6px; }
+        
+        button:disabled { background: #444; opacity: 0.3; cursor: not-allowed; }
+        button:active:not(:disabled) { filter: brightness(1.3); transform: scale(0.95); }
+        
+        input {
+            width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px;
+            border: 2px solid #444; background: #fff; color: #000; box-sizing: border-box; font-size: 16px;
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #333; padding: 8px; text-align: left; font-size: 0.85rem; }
+        td { padding: 10px 8px; border-bottom: 1px solid #444; font-size: 0.85rem; }
+        .stats-val { font-weight: bold; color: #ffeb3b; }
+        
+        .setup-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px 12px; background: #333; border-radius: 6px; }
+        .del-btn { background: #555; color: #ff5252; padding: 5px 10px; font-size: 11px; font-weight: bold; }
+        .archive-title { color: #aaa; font-size: 0.9rem; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card no-print">
+        <h2>Spieler Setup</h2>
+        <input type="text" id="playerName" placeholder="Name eingeben...">
+        <button class="btn-sec" style="width: 100%" onclick="addPlayer()">Spieler Speichern</button>
+        <div id="playerListEdit" style="margin-top: 15px;"></div>
+    </div>
+
+    <div id="playerActions" class="no-print"></div>
+
+    <div class="card">
+        <div class="player-header">
+            <h2>Aktueller Spieltag</h2>
+            <input type="date" id="matchDate" class="no-print" style="width: auto; margin: 0; padding: 5px;">
+        </div>
+        <div id="currentMatchDisplay" style="font-weight: bold; margin-bottom: 10px;"></div>
+        
+        <table id="statsTable">
+            <thead>
+                <tr>
+                    <th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th>
+                </tr>
+            </thead>
+            <tbody id="statsBody"></tbody>
+        </table>
+        
+        <button class="btn-sec no-print" style="width: 100%; margin-top: 20px; background: #2e7d32;" onclick="archiveDay()">Spieltag abschließen & Archivieren</button>
+    </div>
+
+    <div id="archiveContainer"></div>
+
+    <div class="card no-print">
+        <button class="btn-pdf" onclick="window.print()">Gesamtes Protokoll als PDF</button>
+        <button style="background: #222; width: 100%; margin-top: 20px; font-size: 10px; color: #888;" onclick="hardReset()">Alles löschen (Daten & Namen)</button>
+    </div>
+</div>
+
+<script>
+    let players = JSON.parse(localStorage.getItem('dartPlayers')) || [];
+    let archive = JSON.parse(localStorage.getItem('dartArchive')) || [];
+    let lastActions = {}; 
+
+    document.getElementById('matchDate').valueAsDate = new Date();
+
+    function saveData() {
+        localStorage.setItem('dartPlayers', JSON.stringify(players));
+        localStorage.setItem('dartArchive', JSON.stringify(archive));
+        render();
+    }
+
+    function addPlayer() {
+        const nameInput = document.getElementById('playerName');
+        const name = nameInput.value.trim();
+        if (name === "") return;
+        players.push({ name: name, games: 0, legsWin: 0, legsLoss: 0, penalty: 0 });
+        nameInput.value = "";
+        saveData();
+    }
+
+    function removePlayer(index) {
+        if(confirm("Spieler entfernen?")) {
+            players.splice(index, 1);
+            saveData();
+        }
+    }
+
+    function addStat(index, field) {
+        lastActions[index] = field;
+        if (field === 'penalty') {
+            players[index].penalty = Math.round((players[index].penalty + 0.20) * 100) / 100;
+        } else {
+            players[index][field] += 1;
+        }
+        saveData();
+    }
+
+    function undoPlayerAction(index) {
+        const lastField = lastActions[index];
+        if (!lastField) return;
+        if (lastField === 'penalty') {
+            if (players[index].penalty >= 0.20) players[index].penalty = Math.round((players[index].penalty - 0.20) * 100) / 100;
+        } else {
+            if (players[index][lastField] > 0) players[index][lastField] -= 1;
+        }
+        lastActions[index] = null;
+        saveData();
+    }
+
+    function archiveDay() {
+        const dateVal = document.getElementById('matchDate').value;
+        if(!dateVal) return alert("Bitte Datum wählen");
+        if(confirm("Diesen Spieltag ins Archiv verschieben und Zähler zurücksetzen?")) {
+            const entry = {
+                date: new Date(dateVal).toLocaleDateString('de-DE'),
+                data: JSON.parse(JSON.stringify(players))
+            };
+            archive.unshift(entry); // Neueste oben
+            // Spieler-Zähler nullen
+            players.forEach(p => { p.games = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
+            lastActions = {};
+            saveData();
+        }
+    }
+
+    function hardReset() {
+        if (confirm("Wirklich ALLES löschen?")) {
+            players = []; archive = []; lastActions = {}; saveData();
+        }
+    }
+
+    function render() {
+        // Aktueller Bereich
+        const actionDiv = document.getElementById('playerActions');
+        const statsBody = document.getElementById('statsBody');
+        const editList = document.getElementById('playerListEdit');
+        const dateVal = document.getElementById('matchDate').value;
+        document.getElementById('currentMatchDisplay').innerText = "Datum: " + (dateVal ? new Date(dateVal).toLocaleDateString('de-DE') : "-");
+
+        actionDiv.innerHTML = ""; statsBody.innerHTML = ""; editList.innerHTML = "";
+
+        players.forEach((p, index) => {
+            const setupRow = document.createElement('div');
+            setupRow.className = 'setup-row';
+            setupRow.innerHTML = `<span>${p.name}</span> <button class="del-btn" onclick="removePlayer(${index})">X</button>`;
+            editList.appendChild(setupRow);
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            const undoDisabled = !lastActions[index] ? 'disabled' : '';
+            card.innerHTML = `
+                <div class="player-header"><h3>${p.name}</h3><button class="btn-undo-small" onclick="undoPlayerAction(${index})" ${undoDisabled}>↩</button></div>
+                <div class="grid">
+                    <button class="btn-ring" onclick="addStat(${index}, 'penalty')">RING (0,20€)</button>
+                    <button class="btn-sec" onclick="addStat(${index}, 'games')">Sp. +1</button>
+                    <button class="btn-sec" onclick="addStat(${index}, 'legsWin')">Leg +</button>
+                    <button class="btn-loss" onclick="addStat(${index}, 'legsLoss')">Leg -</button>
+                </div>`;
+            actionDiv.appendChild(card);
+
+            statsBody.innerHTML += `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td class="stats-val">${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`;
+        });
+
+        // Archiv Bereich
+        const archiveContainer = document.getElementById('archiveContainer');
+        archiveContainer.innerHTML = archive.length > 0 ? "<h2 class='archive-title'>Archivierte Spieltage</h2>" : "";
+        archive.forEach(entry => {
+            let rows = entry.data.map(p => `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td>${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
+            archiveContainer.innerHTML += `
+                <div class="card">
+                    <h3>Spieltag vom ${entry.date}</h3>
+                    <table><thead><tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr></thead>
+                    <tbody>${rows}</tbody></table>
+                </div>`;
+        });
+    }
+
+    render();
+</script>
+
+</body>
+</html>
