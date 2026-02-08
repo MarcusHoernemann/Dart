@@ -4,13 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
-    
     <title>Dart Verein Manager</title>
     <link rel="manifest" href="manifest.json">
-
     <style>
         :root {
             --bg: #121212;
@@ -19,7 +16,7 @@
             --accent: #ff0000; 
             --secondary: #4caf50; 
             --loss: #555555;
-            --pdf-color: #007bff; /* Kräftiges Blau für besseren Kontrast */
+            --pdf-color: #007bff;
             --undo-color: #ff9800;
         }
         @media print {
@@ -52,7 +49,6 @@
         h2 { margin: 0 0 10px 0; color: var(--secondary); font-size: 1.3rem; border-bottom: 1px solid #444; padding-bottom: 8px; }
         h3 { margin: 0; font-size: 1.2rem; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        
         button {
             border: none; color: white; padding: 15px 5px; border-radius: 8px;
             font-size: 13px; font-weight: 800; cursor: pointer; touch-action: manipulation; text-transform: uppercase;
@@ -60,29 +56,18 @@
         .btn-ring { background: var(--accent); }
         .btn-sec { background: var(--secondary); }
         .btn-loss { background: var(--loss); }
-        .btn-pdf { 
-            background: var(--pdf-color); 
-            width: 100%; 
-            margin-top: 15px; 
-            padding: 18px; 
-            font-size: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
+        .btn-pdf { background: var(--pdf-color); width: 100%; margin-top: 15px; padding: 18px; font-size: 15px; }
         .btn-undo-small { background: var(--undo-color); padding: 8px 15px; font-size: 18px; line-height: 1; border-radius: 6px; }
-        
         button:disabled { background: #444; opacity: 0.3; cursor: not-allowed; }
         button:active:not(:disabled) { filter: brightness(1.2); transform: scale(0.98); }
-        
-        input {
+        input, textarea {
             width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px;
             border: 2px solid #444; background: #fff; color: #000; box-sizing: border-box; font-size: 16px;
         }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th { background: #333; padding: 8px; text-align: left; font-size: 0.85rem; }
         td { padding: 10px 8px; border-bottom: 1px solid #444; font-size: 0.85rem; }
         .stats-val { font-weight: bold; color: #ffeb3b; }
-        
         .setup-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px 12px; background: #333; border-radius: 6px; }
         .del-btn { background: #555; color: #ff5252; padding: 5px 10px; font-size: 11px; font-weight: bold; }
         .archive-title { color: #aaa; font-size: 0.9rem; margin-top: 20px; text-align: center; }
@@ -106,16 +91,12 @@
             <input type="date" id="matchDate" class="no-print" style="width: auto; margin: 0; padding: 5px;">
         </div>
         <div id="currentMatchDisplay" style="font-weight: bold; margin-bottom: 10px;"></div>
-        
         <table id="statsTable">
             <thead>
-                <tr>
-                    <th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th>
-                </tr>
+                <tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr>
             </thead>
             <tbody id="statsBody"></tbody>
         </table>
-        
         <button class="btn-sec no-print" style="width: 100%; margin-top: 20px; background: #2e7d32;" onclick="archiveDay()">Spieltag abschließen & Archivieren</button>
     </div>
 
@@ -123,14 +104,20 @@
 
     <div class="card no-print">
         <button class="btn-pdf" onclick="window.print()">Protokoll als PDF speichern</button>
+        <button style="background: #444; width: 100%; margin-top: 10px; font-size: 12px;" onclick="toggleBackup()">Daten Sichern/Wiederherstellen</button>
+        
+        <div id="backupArea" style="display:none; margin-top: 15px; border-top: 1px solid #555; padding-top: 15px;">
+            <p style="font-size: 12px; color: #aaa;">Kopiere diesen Text als Backup oder füge ein altes Backup hier ein:</p>
+            <textarea id="backupText" rows="5" style="font-family: monospace; font-size: 10px;"></textarea>
+            <button class="btn-sec" style="width: 100%; background: #607d8b;" onclick="importBackup()">Backup einspielen</button>
+        </div>
+        
         <button style="background: #222; width: 100%; margin-top: 25px; font-size: 10px; color: #888;" onclick="hardReset()">Alles löschen</button>
     </div>
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
-    }
+    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
     let players = JSON.parse(localStorage.getItem('dartPlayers')) || [];
     let archive = JSON.parse(localStorage.getItem('dartArchive')) || [];
@@ -154,30 +141,21 @@
     }
 
     function removePlayer(index) {
-        if(confirm("Spieler entfernen?")) {
-            players.splice(index, 1);
-            saveData();
-        }
+        if(confirm("Spieler entfernen?")) { players.splice(index, 1); saveData(); }
     }
 
     function addStat(index, field) {
         lastActions[index] = field;
-        if (field === 'penalty') {
-            players[index].penalty = Math.round((players[index].penalty + 0.20) * 100) / 100;
-        } else {
-            players[index][field] += 1;
-        }
+        if (field === 'penalty') { players[index].penalty = Math.round((players[index].penalty + 0.20) * 100) / 100; } 
+        else { players[index][field] += 1; }
         saveData();
     }
 
     function undoPlayerAction(index) {
         const lastField = lastActions[index];
         if (!lastField) return;
-        if (lastField === 'penalty') {
-            if (players[index].penalty >= 0.20) players[index].penalty = Math.round((players[index].penalty - 0.20) * 100) / 100;
-        } else {
-            if (players[index][lastField] > 0) players[index][lastField] -= 1;
-        }
+        if (lastField === 'penalty') { if (players[index].penalty >= 0.20) players[index].penalty = Math.round((players[index].penalty - 0.20) * 100) / 100; } 
+        else { if (players[index][lastField] > 0) players[index][lastField] -= 1; }
         lastActions[index] = null;
         saveData();
     }
@@ -185,7 +163,7 @@
     function archiveDay() {
         const dateVal = document.getElementById('matchDate').value;
         if(!dateVal) return alert("Datum wählen");
-        if(confirm("Spieltag archivieren? Zähler werden auf 0 gesetzt.")) {
+        if(confirm("Spieltag archivieren?")) {
             const entry = { date: new Date(dateVal).toLocaleDateString('de-DE'), data: JSON.parse(JSON.stringify(players)) };
             archive.unshift(entry);
             players.forEach(p => { p.games = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
@@ -194,9 +172,29 @@
         }
     }
 
-    function hardReset() {
-        if (confirm("Alles löschen?")) { players = []; archive = []; lastActions = {}; saveData(); }
+    function toggleBackup() {
+        const area = document.getElementById('backupArea');
+        const text = document.getElementById('backupText');
+        area.style.display = area.style.display === 'none' ? 'block' : 'none';
+        if(area.style.display === 'block') {
+            const fullData = { players: players, archive: archive };
+            text.value = JSON.stringify(fullData);
+        }
     }
+
+    function importBackup() {
+        try {
+            const data = JSON.parse(document.getElementById('backupText').value);
+            if(confirm("Bestehende Daten mit diesem Backup überschreiben?")) {
+                players = data.players || [];
+                archive = data.archive || [];
+                saveData();
+                alert("Backup erfolgreich geladen!");
+            }
+        } catch(e) { alert("Fehler: Ungültiges Backup-Format."); }
+    }
+
+    function hardReset() { if (confirm("Alles löschen?")) { players = []; archive = []; lastActions = {}; saveData(); } }
 
     function render() {
         const actionDiv = document.getElementById('playerActions');
@@ -204,15 +202,12 @@
         const editList = document.getElementById('playerListEdit');
         const dateVal = document.getElementById('matchDate').value;
         document.getElementById('currentMatchDisplay').innerText = "Datum: " + (dateVal ? new Date(dateVal).toLocaleDateString('de-DE') : "-");
-
         actionDiv.innerHTML = ""; statsBody.innerHTML = ""; editList.innerHTML = "";
-
         players.forEach((p, index) => {
             const setupRow = document.createElement('div');
             setupRow.className = 'setup-row';
             setupRow.innerHTML = `<span>${p.name}</span> <button class="del-btn" onclick="removePlayer(${index})">X</button>`;
             editList.appendChild(setupRow);
-
             const card = document.createElement('div');
             card.className = 'card';
             const undoDisabled = !lastActions[index] ? 'disabled' : '';
@@ -227,7 +222,6 @@
             actionDiv.appendChild(card);
             statsBody.innerHTML += `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td class="stats-val">${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`;
         });
-
         const archiveContainer = document.getElementById('archiveContainer');
         archiveContainer.innerHTML = archive.length > 0 ? "<h2 class='archive-title'>Archivierte Spieltage</h2>" : "";
         archive.forEach(entry => {
