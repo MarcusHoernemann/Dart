@@ -4,15 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
     
     <title>Dart Verein Manager</title>
-    
-    <link rel="manifest" href='data:application/manifest+json,{"name":"Dart Verein Manager","short_name":"DartApp","start_url":"index.html","display":"standalone","background_color":"#121212","theme_color":"#121212","icons":[{"src":"logo.png","sizes":"192x192","type":"image/png"},{"src":"logo.png","sizes":"512x512","type":"image/png"}]}'>
+    <link rel="manifest" href="manifest.json">
 
     <style>
         :root {
@@ -32,7 +29,6 @@
             h2, h3 { color: black !important; border-bottom: 1px solid black; }
             table { color: black !important; border: 1px solid black; width: 100%; margin-bottom: 20px; }
             th, td { border-bottom: 1px solid #ccc; padding: 8px; }
-            .stats-val { color: black !important; }
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -64,7 +60,6 @@
         .btn-ring { background: var(--accent); }
         .btn-sec { background: var(--secondary); }
         .btn-loss { background: var(--loss); }
-        .btn-pdf { background: var(--pdf-color); width: 100%; margin-top: 10px; }
         .btn-undo-small { background: var(--undo-color); padding: 8px 15px; font-size: 18px; line-height: 1; border-radius: 6px; }
         
         button:disabled { background: #444; opacity: 0.3; cursor: not-allowed; }
@@ -89,9 +84,6 @@
 
 <div class="container">
     <div class="card no-print">
-        <div style="text-align:center; margin-bottom: 10px;">
-            <img src="logo.png" alt="Logo" style="height: 60px; width: auto; border-radius: 5px;" onerror="this.style.display='none'">
-        </div>
         <h2>Spieler Setup</h2>
         <input type="text" id="playerName" placeholder="Name eingeben...">
         <button class="btn-sec" style="width: 100%" onclick="addPlayer()">Spieler Speichern</button>
@@ -123,19 +115,13 @@
 
     <div class="card no-print">
         <button class="btn-pdf" onclick="window.print()">Gesamtes Protokoll als PDF</button>
-        <button style="background: #222; width: 100%; margin-top: 20px; font-size: 10px; color: #888;" onclick="hardReset()">Alles löschen (Daten & Namen)</button>
+        <button style="background: #222; width: 100%; margin-top: 20px; font-size: 10px; color: #888;" onclick="hardReset()">Alles löschen</button>
     </div>
 </div>
 
 <script>
-    // Inlined Service Worker für Installation
     if ('serviceWorker' in navigator) {
-        const swCode = `
-            self.addEventListener('install', e => self.skipWaiting());
-            self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => caches.match(e.request))));
-        `;
-        const blob = new Blob([swCode], {type: 'application/javascript'});
-        navigator.serviceWorker.register(URL.createObjectURL(blob));
+        navigator.serviceWorker.register('sw.js');
     }
 
     let players = JSON.parse(localStorage.getItem('dartPlayers')) || [];
@@ -190,12 +176,9 @@
 
     function archiveDay() {
         const dateVal = document.getElementById('matchDate').value;
-        if(!dateVal) return alert("Bitte Datum wählen");
-        if(confirm("Diesen Spieltag ins Archiv verschieben?")) {
-            const entry = {
-                date: new Date(dateVal).toLocaleDateString('de-DE'),
-                data: JSON.parse(JSON.stringify(players))
-            };
+        if(!dateVal) return alert("Datum wählen");
+        if(confirm("Spieltag archivieren?")) {
+            const entry = { date: new Date(dateVal).toLocaleDateString('de-DE'), data: JSON.parse(JSON.stringify(players)) };
             archive.unshift(entry);
             players.forEach(p => { p.games = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
             lastActions = {};
@@ -204,9 +187,7 @@
     }
 
     function hardReset() {
-        if (confirm("Wirklich ALLES löschen?")) {
-            players = []; archive = []; lastActions = {}; saveData();
-        }
+        if (confirm("Alles löschen?")) { players = []; archive = []; lastActions = {}; saveData(); }
     }
 
     function render() {
@@ -236,7 +217,6 @@
                     <button class="btn-loss" onclick="addStat(${index}, 'legsLoss')">Leg -</button>
                 </div>`;
             actionDiv.appendChild(card);
-
             statsBody.innerHTML += `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td class="stats-val">${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`;
         });
 
@@ -244,16 +224,10 @@
         archiveContainer.innerHTML = archive.length > 0 ? "<h2 class='archive-title'>Archivierte Spieltage</h2>" : "";
         archive.forEach(entry => {
             let rows = entry.data.map(p => `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td>${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
-            archiveContainer.innerHTML += `
-                <div class="card">
-                    <h3>Spieltag vom ${entry.date}</h3>
-                    <table><thead><tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr></thead>
-                    <tbody>${rows}</tbody></table>
-                </div>`;
+            archiveContainer.innerHTML += `<div class="card"><h3>Spieltag vom ${entry.date}</h3><table><thead><tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr></thead><tbody>${rows}</tbody></table></div>`;
         });
     }
     render();
 </script>
-
 </body>
 </html>
