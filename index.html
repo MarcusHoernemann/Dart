@@ -4,229 +4,406 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121212">
+    
     <link rel="apple-touch-icon" href="logo.png">
     <link rel="icon" type="image/png" href="logo.png">
-    <title>Dart Verein Manager</title>
+    
+    <title>DartLog</title>
     <link rel="manifest" href="manifest.json">
+
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Poppins:wght@400;600&display=swap');
+
         :root {
             --bg: #121212;
             --card: #242424;
             --text: #ffffff;
-            --accent: #ff0000; 
+            --accent: #007bff; 
+            --accent-gradient: linear-gradient(135deg, #007bff 0%, #00c6ff 100%);
             --secondary: #4caf50; 
-            --loss: #555555;
-            --pdf-color: #007bff;
+            --loss-matte: #b33a3a;
+            --pdf-btn-bg: #0056b3; 
+            --delete-btn-bg: #8b0000;
             --undo-color: #ff9800;
+            --input-bg: #1a1a1a;
+            --muted-text: #888888;
         }
         @media print {
             body { background: white !important; color: black !important; padding: 0; }
             .no-print { display: none !important; }
             .card { box-shadow: none; border: none; background: white; color: black; margin-bottom: 30px; }
+            .archive-item content { display: block !important; }
             h2, h3 { color: black !important; border-bottom: 1px solid black; }
             table { color: black !important; border: 1px solid black; width: 100%; margin-bottom: 20px; }
             th, td { border-bottom: 1px solid #ccc; padding: 8px; }
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: 'Poppins', sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 15px;
+            padding: 10px;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
-        .container { width: 100%; max-width: 600px; }
+        .app-header {
+            width: 100%;
+            text-align: center;
+            padding: 10px 0 15px 0;
+        }
+        .app-header h1 {
+            margin: 0;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            font-style: italic;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .container { width: 100%; max-width: 900px; }
+        
         .card {
             background: var(--card);
             border-radius: 12px;
             padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 1px solid #333;
         }
-        .player-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        h2 { margin: 0 0 10px 0; color: var(--secondary); font-size: 1.3rem; border-bottom: 1px solid #444; padding-bottom: 8px; }
-        h3 { margin: 0; font-size: 1.2rem; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .setup-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 600px) {
+            .setup-container { grid-template-columns: 1fr 1fr; }
+        }
+
+        .player-row {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        @media (min-width: 650px) or (orientation: landscape) {
+            .player-row {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+            .player-info { min-width: 160px; }
+            .grid-row { flex-grow: 1; }
+        }
+
+        .player-info { display: flex; justify-content: space-between; align-items: center; }
+        h3 { margin: 0; font-size: 1.1rem; font-family: 'Playfair Display', serif; font-style: italic; }
+        
+        .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        
         button {
-            border: none; color: white; padding: 15px 5px; border-radius: 8px;
-            font-size: 13px; font-weight: 800; cursor: pointer; touch-action: manipulation; text-transform: uppercase;
+            border: none; color: white; padding: 12px 2px; border-radius: 6px;
+            font-size: 10px; font-weight: 700; cursor: pointer; touch-action: manipulation; text-transform: uppercase;
         }
-        .btn-ring { background: var(--accent); }
+        .btn-ring { background: var(--accent-gradient); }
         .btn-sec { background: var(--secondary); }
-        .btn-loss { background: var(--loss); }
-        .btn-pdf { background: var(--pdf-color); width: 100%; margin-top: 15px; padding: 18px; font-size: 15px; }
-        .btn-undo-small { background: var(--undo-color); padding: 8px 15px; font-size: 18px; line-height: 1; border-radius: 6px; }
-        button:disabled { background: #444; opacity: 0.3; cursor: not-allowed; }
-        button:active:not(:disabled) { filter: brightness(1.2); transform: scale(0.98); }
-        input, textarea {
-            width: 100%; padding: 12px; margin-bottom: 10px; border-radius: 8px;
-            border: 2px solid #444; background: #fff; color: #000; box-sizing: border-box; font-size: 16px;
+        .btn-loss { background: var(--loss-matte); }
+        
+        .btn-undo-small { 
+            background-color: var(--undo-color) !important; 
+            color: #000000 !important;
+            padding: 5px 15px; 
+            font-size: 18px; 
+            font-weight: bold;
+            margin-left: 10px; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         }
+        
+        .btn-pdf { 
+            background: var(--pdf-btn-bg); 
+            width: 100%; 
+            margin-top: 15px; 
+            padding: 18px; 
+            font-size: 14px; 
+            font-weight: 800;
+            color: white;
+        }
+
+        .btn-stats {
+            background: #444;
+            color: #00c6ff;
+            border: 1px solid #00c6ff;
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+
+        .btn-delete-all {
+            background: var(--delete-btn-bg);
+            width: 100%;
+            margin-top: 25px;
+            padding: 10px;
+            font-size: 11px;
+            color: #ffcccc;
+        }
+        
+        button:disabled { 
+            background: #444 !important; 
+            color: #666 !important; 
+            opacity: 0.3; 
+        }
+        
+        input {
+            width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px;
+            border: 2px solid #444; background: var(--input-bg); color: #fff; box-sizing: border-box; font-size: 15px;
+        }
+        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #333; padding: 8px; text-align: left; font-size: 0.85rem; }
-        td { padding: 10px 8px; border-bottom: 1px solid #444; font-size: 0.85rem; }
-        .stats-val { font-weight: bold; color: #ffeb3b; }
-        .setup-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 8px 12px; background: #333; border-radius: 6px; }
-        .del-btn { background: #555; color: #ff5252; padding: 5px 10px; font-size: 11px; font-weight: bold; }
-        .archive-title { color: #aaa; font-size: 0.9rem; margin-top: 20px; text-align: center; }
+        th { background: #1a1a1a; padding: 8px; text-align: left; font-size: 0.7rem; color: var(--muted-text); text-transform: uppercase; }
+        td { padding: 8px; border-bottom: 1px solid #333; font-size: 0.85rem; }
+        .stats-val { font-weight: bold; color: #00c6ff; }
+        
+        .setup-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; padding: 6px 10px; background: #1a1a1a; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 0.85rem;}
+        .del-btn { background: #444; color: #ff5252; padding: 3px 8px; font-size: 10px; }
+        .setting-label { font-size: 0.7rem; color: #777; margin-bottom: 4px; display: block; font-weight: 600; text-transform: uppercase; }
+
+        /* Accordion Style für das Archiv */
+        .archive-item {
+            cursor: pointer;
+            border-bottom: 1px solid #333;
+        }
+        .archive-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            color: #00c6ff;
+            font-weight: bold;
+        }
+        .archive-header::after {
+            content: '▼';
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+        }
+        .archive-item.open .archive-header::after {
+            transform: rotate(180deg);
+        }
+        .archive-content {
+            display: none;
+            padding-bottom: 10px;
+        }
+        .archive-item.open .archive-content {
+            display: block;
+        }
+
+        /* Statistik Bereich */
+        #statsOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .stats-content {
+            max-width: 600px;
+            margin: 40px auto;
+            background: var(--card);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--accent);
+        }
+        .close-stats {
+            background: var(--loss-matte);
+            width: 100%;
+            padding: 15px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
 
+<header class="app-header no-print">
+    <h1>DartLog</h1>
+</header>
+
 <div class="container">
     <div class="card no-print">
-        <h2>Spieler Setup</h2>
-        <input type="text" id="playerName" placeholder="Name eingeben...">
-        <button class="btn-sec" style="width: 100%" onclick="addPlayer()">Spieler Speichern</button>
-        <div id="playerListEdit" style="margin-top: 15px;"></div>
+        <div class="setup-container">
+            <div>
+                <label class="setting-label">Spieler hinzufügen</label>
+                <input type="text" id="playerName" placeholder="Name...">
+                <button class="btn-sec" style="width: 100%; margin-bottom: 15px;" onclick="addPlayer()">Hinzufügen</button>
+
+                <label class="setting-label">Ring-Strafe (€)</label>
+                <input type="number" id="penaltyAmount" value="0.20" step="0.05" onchange="updatePenaltyValue()">
+            </div>
+            <div>
+                <label class="setting-label">Eingetragene Spieler</label>
+                <div id="playerListEdit"></div>
+            </div>
+        </div>
     </div>
 
     <div id="playerActions" class="no-print"></div>
 
     <div class="card">
-        <div class="player-header">
-            <h2>Aktueller Spieltag</h2>
-            <input type="date" id="matchDate" class="no-print" style="width: auto; margin: 0; padding: 5px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h2 style="margin:0; font-family: 'Playfair Display', serif; color: #00c6ff; font-size: 1.2rem;">Live-Score</h2>
+            <input type="date" id="matchDate" class="no-print" style="width: auto; margin: 0; padding: 4px; font-size: 12px;">
         </div>
-        <div id="currentMatchDisplay" style="font-weight: bold; margin-bottom: 10px;"></div>
-        <table id="statsTable">
-            <thead>
-                <tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr>
-            </thead>
-            <tbody id="statsBody"></tbody>
-        </table>
-        <button class="btn-sec no-print" style="width: 100%; margin-top: 20px; background: #2e7d32;" onclick="archiveDay()">Spieltag abschließen & Archivieren</button>
+        
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr>
+                </thead>
+                <tbody id="statsBody"></tbody>
+            </table>
+        </div>
+        
+        <button class="btn-sec no-print" style="width: 100%; margin-top: 15px; background: #2e7d32;" onclick="archiveDay()">Spieltag Archivieren & Reset</button>
     </div>
 
     <div id="archiveContainer"></div>
 
-    <div class="card no-print">
-        <button class="btn-pdf" onclick="window.print()">Protokoll als PDF speichern</button>
-        <button style="background: #444; width: 100%; margin-top: 10px; font-size: 12px;" onclick="toggleBackup()">Daten Sichern/Wiederherstellen</button>
-        
-        <div id="backupArea" style="display:none; margin-top: 15px; border-top: 1px solid #555; padding-top: 15px;">
-            <p style="font-size: 12px; color: #aaa;">Kopiere diesen Text als Backup oder füge ein altes Backup hier ein:</p>
-            <textarea id="backupText" rows="5" style="font-family: monospace; font-size: 10px;"></textarea>
-            <button class="btn-sec" style="width: 100%; background: #607d8b;" onclick="importBackup()">Backup einspielen</button>
+    <div class="card no-print" style="background: transparent; border: none; text-align: center; padding: 0;">
+        <button class="btn-stats" onclick="showGlobalStats()">EWIGE BESTENLISTE ZEIGEN</button>
+        <button class="btn-pdf" onclick="window.print()">PROTOKOLL ALS PDF SPEICHERN</button>
+        <button class="btn-delete-all" onclick="hardReset()">KOMPLETTE APP ZURÜCKSETZEN</button>
+    </div>
+</div>
+
+<div id="statsOverlay" class="no-print">
+    <div class="stats-content">
+        <h2 style="font-family: 'Playfair Display', serif; color: #00c6ff; text-align: center;">Ewige Bestenliste</h2>
+        <p style="font-size: 0.8rem; color: #777; text-align: center; margin-bottom: 20px;">(Gesamte Historie)</p>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr><th>Name</th><th>Siege</th><th>L +</th><th>L -</th><th>Kasse</th></tr>
+                </thead>
+                <tbody id="globalStatsBody"></tbody>
+            </table>
         </div>
-        
-        <button style="background: #222; width: 100%; margin-top: 25px; font-size: 10px; color: #888;" onclick="hardReset()">Alles löschen</button>
+        <button class="close-stats" onclick="document.getElementById('statsOverlay').style.display='none'">SCHLIESSEN</button>
     </div>
 </div>
 
 <script>
-    if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-
     let players = JSON.parse(localStorage.getItem('dartPlayers')) || [];
     let archive = JSON.parse(localStorage.getItem('dartArchive')) || [];
+    let currentPenalty = parseFloat(localStorage.getItem('dartPenalty')) || 0.20;
     let lastActions = {}; 
 
     document.getElementById('matchDate').valueAsDate = new Date();
+    document.getElementById('penaltyAmount').value = currentPenalty.toFixed(2);
 
     function saveData() {
         localStorage.setItem('dartPlayers', JSON.stringify(players));
         localStorage.setItem('dartArchive', JSON.stringify(archive));
+        localStorage.setItem('dartPenalty', currentPenalty);
         render();
     }
 
+    function updatePenaltyValue() {
+        currentPenalty = parseFloat(document.getElementById('penaltyAmount').value) || 0;
+        saveData();
+    }
+
     function addPlayer() {
-        const nameInput = document.getElementById('playerName');
-        const name = nameInput.value.trim();
-        if (name === "") return;
+        const name = document.getElementById('playerName').value.trim();
+        if (!name) return;
         players.push({ name: name, games: 0, legsWin: 0, legsLoss: 0, penalty: 0 });
-        nameInput.value = "";
+        document.getElementById('playerName').value = "";
         saveData();
     }
 
     function removePlayer(index) {
-        if(confirm("Spieler entfernen?")) { players.splice(index, 1); saveData(); }
+        if(confirm("Spieler löschen?")) { players.splice(index, 1); saveData(); }
     }
 
     function addStat(index, field) {
         lastActions[index] = field;
-        if (field === 'penalty') { players[index].penalty = Math.round((players[index].penalty + 0.20) * 100) / 100; } 
-        else { players[index][field] += 1; }
+        if (field === 'penalty') players[index].penalty = Math.round((players[index].penalty + currentPenalty) * 100) / 100;
+        else players[index][field] += 1;
         saveData();
     }
 
-    function undoPlayerAction(index) {
-        const lastField = lastActions[index];
-        if (!lastField) return;
-        if (lastField === 'penalty') { if (players[index].penalty >= 0.20) players[index].penalty = Math.round((players[index].penalty - 0.20) * 100) / 100; } 
-        else { if (players[index][lastField] > 0) players[index][lastField] -= 1; }
+    function undo(index) {
+        const f = lastActions[index];
+        if (!f) return;
+        if (f === 'penalty') players[index].penalty = Math.max(0, Math.round((players[index].penalty - currentPenalty) * 100) / 100);
+        else players[index][f] = Math.max(0, players[index][f] - 1);
         lastActions[index] = null;
         saveData();
     }
 
     function archiveDay() {
-        const dateVal = document.getElementById('matchDate').value;
-        if(!dateVal) return alert("Datum wählen");
-        if(confirm("Spieltag archivieren?")) {
-            const entry = { date: new Date(dateVal).toLocaleDateString('de-DE'), data: JSON.parse(JSON.stringify(players)) };
-            archive.unshift(entry);
-            players.forEach(p => { p.games = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
-            lastActions = {};
-            saveData();
-        }
+        if(!confirm("Spieltag archivieren? Zähler werden auf 0 gesetzt.")) return;
+        archive.unshift({ date: new Date(document.getElementById('matchDate').value).toLocaleDateString('de-DE'), data: JSON.parse(JSON.stringify(players)) });
+        players.forEach(p => { p.games = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
+        lastActions = {};
+        saveData();
     }
 
-    function toggleBackup() {
-        const area = document.getElementById('backupArea');
-        const text = document.getElementById('backupText');
-        area.style.display = area.style.display === 'none' ? 'block' : 'none';
-        if(area.style.display === 'block') {
-            const fullData = { players: players, archive: archive };
-            text.value = JSON.stringify(fullData);
-        }
+    function toggleArchive(index) {
+        const item = document.getElementById(`archive-item-${index}`);
+        item.classList.toggle('open');
     }
 
-    function importBackup() {
-        try {
-            const data = JSON.parse(document.getElementById('backupText').value);
-            if(confirm("Bestehende Daten mit diesem Backup überschreiben?")) {
-                players = data.players || [];
-                archive = data.archive || [];
-                saveData();
-                alert("Backup erfolgreich geladen!");
-            }
-        } catch(e) { alert("Fehler: Ungültiges Backup-Format."); }
-    }
+    function hardReset() { if (confirm("ACHTUNG: Alles löschen?")) { players = []; archive = []; saveData(); } }
 
-    function hardReset() { if (confirm("Alles löschen?")) { players = []; archive = []; lastActions = {}; saveData(); } }
+    function showGlobalStats() {
+        const stats = {};
+        archive.forEach(day => {
+            day.data.forEach(p => {
+                if (!stats[p.name]) stats[p.name] = { wins: 0, legsWin: 0, legsLoss: 0, money: 0 };
+                stats[p.name].wins += (p.games || 0);
+                stats[p.name].legsWin += (p.legsWin || 0);
+                stats[p.name].legsLoss += (p.legsLoss || 0);
+                stats[p.name].money += (p.penalty || 0);
+            });
+        });
+        const sorted = Object.entries(stats).sort((a, b) => b[1].wins - a[1].wins);
+        const body = document.getElementById('globalStatsBody');
+        body.innerHTML = sorted.map(([name, d]) => `<tr><td>${name}</td><td class="stats-val">${d.wins}</td><td>${d.legsWin}</td><td style="color:#ff5252">${d.legsLoss}</td><td style="color:#ffeb3b">${d.money.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
+        document.getElementById('statsOverlay').style.display = 'block';
+    }
 
     function render() {
         const actionDiv = document.getElementById('playerActions');
         const statsBody = document.getElementById('statsBody');
         const editList = document.getElementById('playerListEdit');
-        const dateVal = document.getElementById('matchDate').value;
-        document.getElementById('currentMatchDisplay').innerText = "Datum: " + (dateVal ? new Date(dateVal).toLocaleDateString('de-DE') : "-");
         actionDiv.innerHTML = ""; statsBody.innerHTML = ""; editList.innerHTML = "";
+
         players.forEach((p, index) => {
-            const setupRow = document.createElement('div');
-            setupRow.className = 'setup-row';
-            setupRow.innerHTML = `<span>${p.name}</span> <button class="del-btn" onclick="removePlayer(${index})">X</button>`;
-            editList.appendChild(setupRow);
+            editList.innerHTML += `<div class="setup-row"><span>${p.name}</span><button class="del-btn" onclick="removePlayer(${index})">X</button></div>`;
             const card = document.createElement('div');
-            card.className = 'card';
-            const undoDisabled = !lastActions[index] ? 'disabled' : '';
-            card.innerHTML = `
-                <div class="player-header"><h3>${p.name}</h3><button class="btn-undo-small" onclick="undoPlayerAction(${index})" ${undoDisabled}>↩</button></div>
-                <div class="grid">
-                    <button class="btn-ring" onclick="addStat(${index}, 'penalty')">RING (0,20€)</button>
-                    <button class="btn-sec" onclick="addStat(${index}, 'games')">Sp. +1</button>
-                    <button class="btn-sec" onclick="addStat(${index}, 'legsWin')">Leg +</button>
-                    <button class="btn-loss" onclick="addStat(${index}, 'legsLoss')">Leg -</button>
-                </div>`;
+            card.className = 'card player-row';
+            card.innerHTML = `<div class="player-info"><h3>${p.name}</h3><button class="btn-undo-small" onclick="undo(${index})" ${!lastActions[index] ? 'disabled' : ''}>&#10226;</button></div><div class="grid-row"><button class="btn-ring" onclick="addStat(${index}, 'penalty')">Ring</button><button class="btn-sec" onclick="addStat(${index}, 'games')">Sieg</button><button class="btn-sec" onclick="addStat(${index}, 'legsWin')">Leg +</button><button class="btn-loss" onclick="addStat(${index}, 'legsLoss')">Leg -</button></div>`;
             actionDiv.appendChild(card);
             statsBody.innerHTML += `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td class="stats-val">${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`;
         });
+
         const archiveContainer = document.getElementById('archiveContainer');
-        archiveContainer.innerHTML = archive.length > 0 ? "<h2 class='archive-title'>Archivierte Spieltage</h2>" : "";
-        archive.forEach(entry => {
-            let rows = entry.data.map(p => `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td>${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
-            archiveContainer.innerHTML += `<div class="card"><h3>Spieltag vom ${entry.date}</h3><table><thead><tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+        archiveContainer.innerHTML = archive.length ? `<h2 style="text-align:center; color:#555; font-size:1rem; margin-top:20px;">Archivierte Spieltage</h2>` : "";
+        archive.forEach((e, i) => {
+            let r = e.data.map(p => `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td>${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
+            archiveContainer.innerHTML += `
+                <div class="card archive-item" id="archive-item-${i}" onclick="toggleArchive(${i})">
+                    <div class="archive-header">Spieltag vom ${e.date}</div>
+                    <div class="archive-content">
+                        <table>
+                            <thead><tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>€</th></tr></thead>
+                            <tbody>${r}</tbody>
+                        </table>
+                    </div>
+                </div>`;
         });
     }
     render();
