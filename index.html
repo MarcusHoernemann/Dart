@@ -12,22 +12,27 @@
     <link rel="manifest" href="manifest.json">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=Poppins:wght@400;600&display=swap');
-
         :root {
             --bg: #121212;
             --card: #242424;
             --text: #ffffff;
             --accent: #007bff; 
             --accent-gradient: linear-gradient(135deg, #007bff 0%, #00c6ff 100%);
-            --secondary: #4caf50; 
-            --loss-matte: #b33a3a;
+            --secondary-leg: #4caf50; 
+            --secondary-win: #2e7d32; 
+            --loss-leg: #b33a3a;     
+            --loss-game: #c62828;    
+            --ring-orange: #ff9800; 
             --pdf-btn-bg: #0056b3; 
             --delete-btn-bg: #8b0000;
             --undo-color: #ff9800;
             --input-bg: #1a1a1a;
             --muted-text: #888888;
+            
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-serif: "Georgia", "Times New Roman", serif;
         }
+
         @media print {
             body { background: white !important; color: black !important; padding: 0; }
             .no-print { display: none !important; }
@@ -36,9 +41,11 @@
             h2, h3 { color: black !important; border-bottom: 1px solid black; }
             table { color: black !important; border: 1px solid black; width: 100%; margin-bottom: 20px; }
             th, td { border-bottom: 1px solid #ccc; padding: 8px; }
+            .app-footer { display: none; }
         }
+
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: var(--font-main);
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
@@ -46,22 +53,28 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
+
         .app-header {
             width: 100%;
             text-align: center;
             padding: 10px 0 15px 0;
         }
+
         .app-header h1 {
             margin: 0;
-            font-family: 'Playfair Display', serif;
+            font-family: var(--font-serif);
             font-size: 2.5rem;
             font-style: italic;
+            font-weight: 700;
             background: var(--accent-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
-        .container { width: 100%; max-width: 900px; }
+
+        .container { width: 100%; max-width: 900px; flex: 1; }
         
         .card {
             background: var(--card);
@@ -98,17 +111,26 @@
         }
 
         .player-info { display: flex; justify-content: space-between; align-items: center; }
-        h3 { margin: 0; font-size: 1.1rem; font-family: 'Playfair Display', serif; font-style: italic; }
         
-        .grid-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+        h3 { 
+            margin: 0; 
+            font-size: 1.1rem; 
+            font-family: var(--font-serif); 
+            font-style: italic; 
+        }
+        
+        .grid-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
         
         button {
             border: none; color: white; padding: 12px 2px; border-radius: 6px;
-            font-size: 10px; font-weight: 700; cursor: pointer; touch-action: manipulation; text-transform: uppercase;
+            font-size: 9px; font-weight: 700; cursor: pointer; touch-action: manipulation; text-transform: uppercase;
+            font-family: var(--font-main);
         }
-        .btn-ring { background: var(--accent-gradient); }
-        .btn-sec { background: var(--secondary); }
-        .btn-loss { background: var(--loss-matte); }
+        .btn-ring { background: var(--ring-orange); color: #000; } 
+        .btn-win-game { background: var(--secondary-win); }
+        .btn-lose-game { background: var(--loss-game); }
+        .btn-win-leg { background: var(--secondary-leg); }
+        .btn-lose-leg { background: var(--loss-leg); }
         
         .btn-undo-small { 
             background-color: var(--undo-color) !important; 
@@ -117,7 +139,6 @@
             font-size: 18px; 
             font-weight: bold;
             margin-left: 10px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
         }
         
         .btn-pdf { 
@@ -127,7 +148,6 @@
             padding: 18px; 
             font-size: 14px; 
             font-weight: 800;
-            color: white;
         }
 
         .btn-stats {
@@ -137,7 +157,6 @@
             width: 100%;
             padding: 12px;
             margin-top: 10px;
-            font-size: 12px;
         }
 
         .btn-delete-all {
@@ -159,70 +178,43 @@
             width: 100%; padding: 10px; margin-bottom: 8px; border-radius: 8px;
             border: 2px solid #444; background: var(--input-bg); color: #fff; box-sizing: border-box; font-size: 15px;
         }
+
+        /* Styling für das Kalender-Icon (hellgrau) */
+        #matchDate::-webkit-calendar-picker-indicator {
+            filter: invert(0.7); /* Macht das Icon hellgrau */
+            cursor: pointer;
+        }
         
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #1a1a1a; padding: 8px; text-align: left; font-size: 0.7rem; color: var(--muted-text); text-transform: uppercase; }
-        td { padding: 8px; border-bottom: 1px solid #333; font-size: 0.85rem; }
+        th { background: #1a1a1a; padding: 8px; text-align: left; font-size: 0.65rem; color: var(--muted-text); text-transform: uppercase; }
+        td { padding: 8px; border-bottom: 1px solid #333; font-size: 0.8rem; }
         .stats-val { font-weight: bold; color: #00c6ff; }
+        .loss-val { color: #ff5252; font-weight: bold; }
         
         .setup-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; padding: 6px 10px; background: #1a1a1a; border-radius: 6px; border-left: 3px solid var(--accent); font-size: 0.85rem;}
         .del-btn { background: #444; color: #ff5252; padding: 3px 8px; font-size: 10px; }
         .setting-label { font-size: 0.7rem; color: #777; margin-bottom: 4px; display: block; font-weight: 600; text-transform: uppercase; }
 
-        /* Accordion Style für das Archiv */
-        .archive-item {
-            cursor: pointer;
-            border-bottom: 1px solid #333;
-        }
-        .archive-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            color: #00c6ff;
-            font-weight: bold;
-        }
-        .archive-header::after {
-            content: '▼';
-            font-size: 0.8rem;
-            transition: transform 0.3s;
-        }
-        .archive-item.open .archive-header::after {
-            transform: rotate(180deg);
-        }
-        .archive-content {
-            display: none;
-            padding-bottom: 10px;
-        }
-        .archive-item.open .archive-content {
-            display: block;
+        .archive-item { cursor: pointer; border-bottom: 1px solid #333; }
+        .archive-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; color: #00c6ff; font-weight: bold; }
+        .archive-header::after { content: '▼'; font-size: 0.8rem; transition: transform 0.3s; }
+        .archive-item.open .archive-header::after { transform: rotate(180deg); }
+        .archive-content { display: none; padding-bottom: 10px; }
+        .archive-item.open .archive-content { display: block; }
+
+        .app-footer {
+            width: 100%;
+            text-align: center;
+            padding: 20px 0;
+            font-size: 0.7rem;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Statistik Bereich */
-        #statsOverlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9);
-            z-index: 1000;
-            overflow-y: auto;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        .stats-content {
-            max-width: 600px;
-            margin: 40px auto;
-            background: var(--card);
-            padding: 20px;
-            border-radius: 15px;
-            border: 1px solid var(--accent);
-        }
-        .close-stats {
-            background: var(--loss-matte);
-            width: 100%;
-            padding: 15px;
-            margin-top: 20px;
-        }
+        #statsOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+        .stats-content { max-width: 650px; margin: 40px auto; background: var(--card); padding: 20px; border-radius: 15px; border: 1px solid var(--accent); }
+        .close-stats { background: var(--loss-matte); width: 100%; padding: 15px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -237,7 +229,7 @@
             <div>
                 <label class="setting-label">Spieler hinzufügen</label>
                 <input type="text" id="playerName" placeholder="Name...">
-                <button class="btn-sec" style="width: 100%; margin-bottom: 15px;" onclick="addPlayer()">Hinzufügen</button>
+                <button class="btn-win-leg" style="width: 100%; margin-bottom: 15px;" onclick="addPlayer()">Hinzufügen</button>
 
                 <label class="setting-label">Ring-Strafe (€)</label>
                 <input type="number" id="penaltyAmount" value="0.20" step="0.05" onchange="updatePenaltyValue()">
@@ -253,20 +245,20 @@
 
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <h2 style="margin:0; font-family: 'Playfair Display', serif; color: #00c6ff; font-size: 1.2rem;">Live-Score</h2>
+            <h2 style="margin:0; font-family: var(--font-serif); font-style: italic; color: #00c6ff; font-size: 1.2rem;">Live-Score</h2>
             <input type="date" id="matchDate" class="no-print" style="width: auto; margin: 0; padding: 4px; font-size: 12px;">
         </div>
         
         <div style="overflow-x: auto;">
             <table>
                 <thead>
-                    <tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>Kasse</th></tr>
+                    <tr><th>Name</th><th>S</th><th>N</th><th>L+</th><th>L-</th><th>Kasse</th></tr>
                 </thead>
                 <tbody id="statsBody"></tbody>
             </table>
         </div>
         
-        <button class="btn-sec no-print" style="width: 100%; margin-top: 15px; background: #2e7d32;" onclick="archiveDay()">Spieltag Archivieren & Reset</button>
+        <button class="btn-win-leg no-print" style="width: 100%; margin-top: 15px; background: #2e7d32;" onclick="archiveDay()">Spieltag Archivieren & Reset</button>
     </div>
 
     <div id="archiveContainer"></div>
@@ -278,14 +270,17 @@
     </div>
 </div>
 
+<footer class="app-footer no-print">
+    DartLog v1.1.4 &bull; Entwickelt von Marcus Hörnemann
+</footer>
+
 <div id="statsOverlay" class="no-print">
     <div class="stats-content">
-        <h2 style="font-family: 'Playfair Display', serif; color: #00c6ff; text-align: center;">Ewige Bestenliste</h2>
-        <p style="font-size: 0.8rem; color: #777; text-align: center; margin-bottom: 20px;">(Gesamte Historie)</p>
+        <h2 style="font-family: var(--font-serif); font-style: italic; color: #00c6ff; text-align: center;">Ewige Bestenliste</h2>
         <div style="overflow-x: auto;">
             <table>
                 <thead>
-                    <tr><th>Name</th><th>Siege</th><th>L +</th><th>L -</th><th>Kasse</th></tr>
+                    <tr><th>Name</th><th>S</th><th>N</th><th>L +</th><th>L -</th><th>Kasse</th></tr>
                 </thead>
                 <tbody id="globalStatsBody"></tbody>
             </table>
@@ -318,7 +313,7 @@
     function addPlayer() {
         const name = document.getElementById('playerName').value.trim();
         if (!name) return;
-        players.push({ name: name, games: 0, legsWin: 0, legsLoss: 0, penalty: 0 });
+        players.push({ name: name, games: 0, losses: 0, legsWin: 0, legsLoss: 0, penalty: 0 });
         document.getElementById('playerName').value = "";
         saveData();
     }
@@ -330,7 +325,7 @@
     function addStat(index, field) {
         lastActions[index] = field;
         if (field === 'penalty') players[index].penalty = Math.round((players[index].penalty + currentPenalty) * 100) / 100;
-        else players[index][field] += 1;
+        else players[index][field] = (players[index][field] || 0) + 1;
         saveData();
     }
 
@@ -346,7 +341,7 @@
     function archiveDay() {
         if(!confirm("Spieltag archivieren? Zähler werden auf 0 gesetzt.")) return;
         archive.unshift({ date: new Date(document.getElementById('matchDate').value).toLocaleDateString('de-DE'), data: JSON.parse(JSON.stringify(players)) });
-        players.forEach(p => { p.games = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
+        players.forEach(p => { p.games = 0; p.losses = 0; p.legsWin = 0; p.legsLoss = 0; p.penalty = 0; });
         lastActions = {};
         saveData();
     }
@@ -362,8 +357,9 @@
         const stats = {};
         archive.forEach(day => {
             day.data.forEach(p => {
-                if (!stats[p.name]) stats[p.name] = { wins: 0, legsWin: 0, legsLoss: 0, money: 0 };
+                if (!stats[p.name]) stats[p.name] = { wins: 0, losses: 0, legsWin: 0, legsLoss: 0, money: 0 };
                 stats[p.name].wins += (p.games || 0);
+                stats[p.name].losses += (p.losses || 0);
                 stats[p.name].legsWin += (p.legsWin || 0);
                 stats[p.name].legsLoss += (p.legsLoss || 0);
                 stats[p.name].money += (p.penalty || 0);
@@ -371,7 +367,15 @@
         });
         const sorted = Object.entries(stats).sort((a, b) => b[1].wins - a[1].wins);
         const body = document.getElementById('globalStatsBody');
-        body.innerHTML = sorted.map(([name, d]) => `<tr><td>${name}</td><td class="stats-val">${d.wins}</td><td>${d.legsWin}</td><td style="color:#ff5252">${d.legsLoss}</td><td style="color:#ffeb3b">${d.money.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
+        body.innerHTML = sorted.map(([name, d]) => `
+            <tr>
+                <td>${name}</td>
+                <td class="stats-val">${d.wins}</td>
+                <td class="loss-val">${d.losses}</td>
+                <td>${d.legsWin}</td>
+                <td style="color:#ff5252">${d.legsLoss}</td>
+                <td style="color:#ffeb3b">${d.money.toFixed(2).replace('.', ',')} €</td>
+            </tr>`).join('');
         document.getElementById('statsOverlay').style.display = 'block';
     }
 
@@ -385,21 +389,40 @@
             editList.innerHTML += `<div class="setup-row"><span>${p.name}</span><button class="del-btn" onclick="removePlayer(${index})">X</button></div>`;
             const card = document.createElement('div');
             card.className = 'card player-row';
-            card.innerHTML = `<div class="player-info"><h3>${p.name}</h3><button class="btn-undo-small" onclick="undo(${index})" ${!lastActions[index] ? 'disabled' : ''}>&#10226;</button></div><div class="grid-row"><button class="btn-ring" onclick="addStat(${index}, 'penalty')">Ring</button><button class="btn-sec" onclick="addStat(${index}, 'games')">Sieg</button><button class="btn-sec" onclick="addStat(${index}, 'legsWin')">Leg +</button><button class="btn-loss" onclick="addStat(${index}, 'legsLoss')">Leg -</button></div>`;
+            card.innerHTML = `
+                <div class="player-info">
+                    <h3>${p.name}</h3>
+                    <button class="btn-undo-small" onclick="undo(${index})" ${!lastActions[index] ? 'disabled' : ''}>&#10226;</button>
+                </div>
+                <div class="grid-row">
+                    <button class="btn-win-game" onclick="addStat(${index}, 'games')">Sieg</button>
+                    <button class="btn-lose-game" onclick="addStat(${index}, 'losses')">Lose</button>
+                    <button class="btn-ring" onclick="addStat(${index}, 'penalty')">Ring</button>
+                    <button class="btn-win-leg" onclick="addStat(${index}, 'legsWin')">Leg +</button>
+                    <button class="btn-lose-leg" onclick="addStat(${index}, 'legsLoss')">Leg -</button>
+                </div>`;
             actionDiv.appendChild(card);
-            statsBody.innerHTML += `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td class="stats-val">${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`;
+            statsBody.innerHTML += `
+                <tr>
+                    <td>${p.name}</td>
+                    <td>${p.games}</td>
+                    <td class="loss-val">${p.losses || 0}</td>
+                    <td>${p.legsWin}</td>
+                    <td>${p.legsLoss}</td>
+                    <td class="stats-val">${p.penalty.toFixed(2).replace('.', ',')} €</td>
+                </tr>`;
         });
 
         const archiveContainer = document.getElementById('archiveContainer');
         archiveContainer.innerHTML = archive.length ? `<h2 style="text-align:center; color:#555; font-size:1rem; margin-top:20px;">Archivierte Spieltage</h2>` : "";
         archive.forEach((e, i) => {
-            let r = e.data.map(p => `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td>${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
+            let r = e.data.map(p => `<tr><td>${p.name}</td><td>${p.games}</td><td>${p.losses || 0}</td><td>${p.legsWin}</td><td>${p.legsLoss}</td><td>${p.penalty.toFixed(2).replace('.', ',')} €</td></tr>`).join('');
             archiveContainer.innerHTML += `
                 <div class="card archive-item" id="archive-item-${i}" onclick="toggleArchive(${i})">
                     <div class="archive-header">Spieltag vom ${e.date}</div>
                     <div class="archive-content">
                         <table>
-                            <thead><tr><th>Name</th><th>Sp.</th><th>L+</th><th>L-</th><th>€</th></tr></thead>
+                            <thead><tr><th>Name</th><th>S</th><th>N</th><th>L+</th><th>L-</th><th>€</th></tr></thead>
                             <tbody>${r}</tbody>
                         </table>
                     </div>
